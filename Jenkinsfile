@@ -28,7 +28,7 @@ pipeline {
       steps {
         script {
           // Prepare the Tag name for the image
-          dockerTag = "${params.REPO}:${env.BUILD_ID}"
+             dockerTag = "${params.REPO}:${env.BUILD_ID}"
           docker.withRegistry("${params.ECRURL}", 'ecr:ap-south-1:AWSCred') {
             /* Build docker image locally */
             myImage = docker.build(dockerTag)
