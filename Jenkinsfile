@@ -28,12 +28,12 @@ pipeline {
       steps {
         script {
           // Prepare the Tag name for the image
-             dockerTag = "${params.REPO}:${env.BUILD_ID}"
-          docker.withRegistry("${params.ECRURL}", 'ecr:ap-south-1:AWSCred') {
-            /* Build docker image locally */
-            myImage = docker.build(dockerTag)
+          def dockerTag = "${params.REPO}:${env.BUILD_ID}"
+          docker.withRegistry("${params.ECRURL}", AWS_CREDENTIALS_ID) {
+            // Build Docker image
+            def myImage = docker.build(dockerTag)
 
-            /* Push the Image to the Registry */
+            // Push the Image to the Registry
             myImage.push()
           }
         }
@@ -43,7 +43,7 @@ pipeline {
     stage('Scan Image') {
       agent { label 'demo' }
       steps {
-        withAWS(credentials: 'AWSCred') {
+        withAWS(credentials: AWS_CREDENTIALS_ID, region: "${params.REGION}") {
           sh "./getimagescan.sh ${params.REPO} ${env.BUILD_ID} ${params.REGION}"
         }
       }
@@ -55,3 +55,4 @@ pipeline {
     }
   }
 }
+
