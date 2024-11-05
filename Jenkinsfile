@@ -28,7 +28,7 @@ pipeline {
             steps {
                 script {
                     // Prepare the Tag name for the image
-                    dockerTag = "${params.REPO}:${env.BUILD_ID}"
+                    def dockerTag = "${params.REPO}:${env.BUILD_ID}"
 
                     echo "Docker Tag: ${dockerTag}"
 
