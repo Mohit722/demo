@@ -1,78 +1,54 @@
 pipeline {
-    agent { label 'TERRAFORMCORE' } // Use the label of your Terraform node
 
-    parameters {
-        choice(name: 'ACTION', choices: ['Create', 'Destroy'], description: 'Select action to perform')
-    }
+  agent none
+  options {
+    timeout(time: 15, unit: 'MINUTES')
+ }
 
-    environment {
-        AWS_CREDENTIALS_ID = 'aws_credentials' // Replace with your AWS credentials ID in Jenkins
-        GITHUB_REPO = 'https://github.com/Mohit722/ansible-infra-setup-jenkins-terraform.git' // Replace with your repository
-    }
 
-    stages {
+  parameters {
+    string(name: 'ECRURL', defaultValue: 'your-ecr-url', description: 'ECR repository URL')
+    string(name: 'REPO', defaultValue: 'wezvabaseimage', description: 'Name of the Docker repository')
+    string(name: 'REGION', defaultValue: 'ap-south-1', description: 'AWS region')
+  }
 
-        stage('Clean Workspace') {
-            steps {
-                cleanWs()  // Clean the workspace to remove previous files
-            }
-        }
-        
-        
-        stage('Clone Repository') {
-            steps {
-                // Clone the GitHub repository
-                git GITHUB_REPO
-            }
-        }
-        
-        stage('Terraform Init and Plan') {
-            when {
-                expression { params.ACTION == 'Create' } // Run this stage only if 'Create' is selected
-            }
-            steps {
-                dir("${WORKSPACE}") {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIALS_ID]]) {
-                        sh '''
-                        terraform init
-                        terraform validate
-                        // terraform plan 
-                        '''
-                    }
-                }
-            }
-        }
-        
-        stage('Terraform Apply') {
-            when {
-                expression { params.ACTION == 'Create' } // Run this stage only if 'Create' is selected
-            }
-            steps {
-                dir("${WORKSPACE}") {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIALS_ID]]) {
-                        sh 'terraform apply -auto-approve'
-                    }
-                }
-            }
-        }
-        
-        stage('Terraform Destroy') {
-            when {
-                expression { params.ACTION == 'Destroy' } // Run this stage only if 'Destroy' is selected
-            }
-            steps {
-                dir("${WORKSPACE}") {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIALS_ID]]) {
-                        sh 'terraform destroy -auto-approve'
-                    }
-                }
-            }
-        }
+  stages {
+    stage('Checkout') {
+      agent { label 'demo' }
+      steps {
+        git branch: 'master', url: 'https://gitlab.com/scmlearningcentre/demo.git'
+      }
     }
     
-    post {
-        always {
-            cleanWs() // Clean up the workspace after the pipeline finishes
+    stage('Build Image') {
+
+      agent { label 'demo' }
+      steps {
+        script {
+          // Prepare the Tag name for the image
+          dockerTag = "${params.REPO}:${env.BUILD_ID}"
+          docker.withRegistry(params.ECRURL, 'ecr:ap-south-1:AWSCred') {
+            /* Build docker image locally */
+            myImage = docker.build(dockerTag)
+
+            /* Push the Image to the Registry */
+            myImage.push()
+          }
         }
+      }
     }
+
+    stage('Scan Image') {
+      steps {
+        withAWS(credentials: 'AWSCred') {
+          sh "./getimagescan.sh ${params.REPO} ${env.BUILD_ID} ${params.REGION}"
+        }
+      }
+      post {
+        always {
+          sh "docker rmi ${params.REPO}:${env.BUILD_ID}"
+        }
+      }
+    }
+  }
 }
