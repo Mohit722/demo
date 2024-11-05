@@ -11,7 +11,9 @@ pipeline {
     string(name: 'REPO', defaultValue: 'wezvabaseimage', description: 'Name of the Docker repository')
     string(name: 'REGION', defaultValue: 'ap-south-1', description: 'AWS region')
   }
-
+  environment {
+        AWS_CREDENTIALS_ID = 'aws_credentials' // Replace with your AWS credentials ID in Jenkins
+  }
   stages {
     stage('Checkout') {
       agent { label 'demo' }
