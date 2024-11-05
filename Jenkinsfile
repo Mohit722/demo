@@ -6,7 +6,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'ECRURL', defaultValue: 'https://your-ecr-url', description: 'ECR repository URL')
+        string(name: 'ECRURL', defaultValue: 'https://211125447612.dkr.ecr.ap-south-1.amazonaws.com', description: 'ECR repository URL')
         string(name: 'REPO', defaultValue: 'wezvabaseimage', description: 'Name of the Docker repository')
         string(name: 'REGION', defaultValue: 'ap-south-1', description: 'AWS region')
     }
@@ -27,20 +27,14 @@ pipeline {
             agent { label 'demo' }
             steps {
                 script {
-                    // Debugging: Verify Docker permissions
-                    try {
-                        sh 'docker --version'
-                        sh 'docker info'
-                        sh 'docker ps'
-                        echo 'Docker permissions are correctly set.'
-                    } catch (Exception e) {
-                        error 'Failed to run Docker commands. Check user permissions and Docker setup.'
-                    }
-
                     // Prepare the Tag name for the image
                     dockerTag = "${params.REPO}:${env.BUILD_ID}"
 
                     echo "Docker Tag: ${dockerTag}"
+
+                    // Debugging: Check Docker version and info
+                    sh 'docker --version'
+                    sh 'docker info'
 
                     // Login to ECR using AWS CLI with Jenkins credentials
                     withAWS(credentials: AWS_CREDENTIALS_ID, region: "${params.REGION}") {
