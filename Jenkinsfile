@@ -18,13 +18,6 @@ pipeline {
             }
         }
         
-        stage('Setup AWS Credentials') {
-            steps {
-                // Unset any existing AWS credentials to avoid conflicts
-                sh 'unset AWS_ACCESS_KEY_ID'
-                sh 'unset AWS_SECRET_ACCESS_KEY'
-            }
-        }
         
         stage('Clone Repository') {
             steps {
@@ -43,7 +36,7 @@ pipeline {
                         sh '''
                         terraform init
                         terraform validate
-                        // terraform plan -out=terraform_plan.out
+                        // terraform plan 
                         '''
                     }
                 }
