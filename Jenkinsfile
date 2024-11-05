@@ -38,9 +38,9 @@ pipeline {
 
                     // Login to ECR using AWS CLI with Jenkins credentials
                     withAWS(credentials: AWS_CREDENTIALS_ID, region: "${params.REGION}") {
-                        sh """
+                        sh '''
                             aws ecr get-login-password --region ${params.REGION} | docker login --username AWS --password-stdin ${params.ECRURL}
-                        """
+                        '''
                     }
 
                     // Build Docker image
