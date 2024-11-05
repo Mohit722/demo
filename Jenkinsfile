@@ -19,7 +19,7 @@ pipeline {
     stage('Checkout') {
       agent { label 'demo' }
       steps {
-        git branch: 'master', url: 'https://github.com/Mohit722/demosetup.git', credentialsId: 'f3e711f0-ce66-422e-8207-0e4c0647d1aa'
+        git branch: 'master', url: 'https://github.com/Mohit722/demosetup.git'
       }
     }
 
