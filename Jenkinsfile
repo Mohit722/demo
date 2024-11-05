@@ -43,7 +43,7 @@ pipeline {
                         sh '''
                         terraform init
                         terraform validate
-                        terraform plan -out=terraform_plan.out
+                        // terraform plan -out=terraform_plan.out
                         '''
                     }
                 }
