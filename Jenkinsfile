@@ -27,9 +27,15 @@ pipeline {
       agent { label 'demo' }
       steps {
         script {
-            // Prepare the Tag name for the image
-            def dockerTag = "${params.REPO}:${env.BUILD_ID}"
+          // Prepare the Tag name for the image
+          def dockerTag = "${params.REPO}:${env.BUILD_ID}"
+
+          echo "Docker Tag: ${dockerTag}"
           docker.withRegistry("${params.ECRURL}", AWS_CREDENTIALS_ID) {
+            // Debugging: Check Docker version and info
+            sh 'docker --version'
+            sh 'docker info'
+
             // Build Docker image
             def myImage = docker.build(dockerTag)
 
