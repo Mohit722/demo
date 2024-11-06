@@ -29,13 +29,15 @@ pipeline {
                     // Prepare the Tag name for the image
                     dockerTag = "${params.REPO}:${env.BUILD_ID}"
 
-                    // Use the AWS credentials stored in Jenkins (referenced from environment variable)
-                    docker.withRegistry(params.ECRURL, env.AWS_CREDENTIALS) {
-                        // Build docker image locally
-                        myImage = docker.build(dockerTag)
+                    dir("${WORKSPACE}") {
+                        // Use the AWS credentials stored in Jenkins (referenced from environment variable)
+                        docker.withRegistry(params.ECRURL, env.AWS_CREDENTIALS) {
+                            // Build docker image locally
+                            myImage = docker.build(dockerTag)
 
-                        // Push the Image to the Registry
-                        myImage.push()
+                            // Push the Image to the Registry
+                            myImage.push()
+                        }
                     }
                 }
             }
