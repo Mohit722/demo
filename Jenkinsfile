@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent any
     options {
         timeout(time: 15, unit: 'MINUTES')
     }
@@ -17,42 +17,25 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            agent { label 'demo' }
             steps {
                 git branch: 'master', url: 'https://github.com/Mohit722/demosetup.git'
             }
         }
 
         stage('Build Image') {
-            agent { label 'demo' }
             steps {
                 script {
-                    // Prepare the Tag name for the image
                     dockerTag = "${params.REPO}:${env.BUILD_ID}"
-
-                    dir("${WORKSPACE}") {
-                        // Ensure Docker is running and the user has permissions
-                        sh "docker info" // Check Docker daemon status
-
-                        // Authenticate with ECR and build the Docker image
-                        docker.withRegistry(params.ECRURL, env.AWS_CREDENTIALS) {
-                            myImage = docker.build(dockerTag)
-
-                            // Push the Image to ECR
-                            try {
-                                myImage.push()
-                            } catch (e) {
-                                currentBuild.result = 'FAILURE'
-                                throw e // Fail the build if push fails
-                            }
-                        }
-                    }
+                    sh "docker info"
+                    sh "docker build -t ${dockerTag} ."
+                    sh "aws ecr get-login-password --region ${params.REGION} | docker login --username AWS --password-stdin ${params.ECRURL}"
+                    sh "docker tag ${dockerTag} ${params.ECRURL}/${dockerTag}"
+                    sh "docker push ${params.ECRURL}/${dockerTag}"
                 }
             }
         }
 
         stage('Scan Image') {
-            agent { label 'demo' }
             steps {
                 withAWS(credentials: env.AWS_CREDENTIALS) {
                     sh "./getimagescan.sh ${params.REPO} ${env.BUILD_ID} ${params.REGION}"
@@ -60,8 +43,7 @@ pipeline {
             }
             post {
                 always {
-                    // Clean up the Docker image after the scan
-                    sh "docker rmi ${params.REPO}:${env.BUILD_ID}"
+                    sh "docker rmi ${params.ECRURL}/${dockerTag}"
                 }
             }
         }
