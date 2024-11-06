@@ -7,20 +7,18 @@ ENV WILDFLY_VERSION=19.0.0.Final \
     WILDFLY_SHA1=0d47c0e8054353f3e2749c11214eab5bc7d78a14
 
 USER root
+RUN mkdir /var/log/wezva && chown jboss:jboss /var/log/wezva
 
-# Combine RUN commands to reduce layers and install curl securely
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
-    rm -rf /var/lib/apt/lists/* && \
-    mkdir /var/log/wezva && chown jboss:jboss /var/log/wezva && \
+# Add the WildFly distribution to /opt, and make wildfly the owner of the extracted tar content
+RUN cd $HOME && \
     curl -O https://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz && \
-    echo "$WILDFLY_SHA1 wildfly-$WILDFLY_VERSION.tar.gz" | sha1sum -c - && \
-    tar xf wildfly-$WILDFLY_VERSION.tar.gz -C /opt && \
-    mv /opt/wildfly-$WILDFLY_VERSION $JBOSS_HOME && \
+    sha1sum wildfly-$WILDFLY_VERSION.tar.gz | grep $WILDFLY_SHA1 && \
+    tar xf wildfly-$WILDFLY_VERSION.tar.gz && \
+    mv $HOME/wildfly-$WILDFLY_VERSION $JBOSS_HOME && \
     rm wildfly-$WILDFLY_VERSION.tar.gz && \
-    chown -R jboss:jboss ${JBOSS_HOME} && \
-    chmod -R g+rw ${JBOSS_HOME} && \
-    apt-get purge -y --auto-remove curl
+    chown -R jboss:0 ${JBOSS_HOME} && \
+    chmod -R g+rw ${JBOSS_HOME}
+
 
 # Ensure signals are forwarded to the JVM process correctly for graceful shutdown
 ENV LAUNCH_JBOSS_IN_BACKGROUND=true
