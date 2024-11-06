@@ -1,6 +1,9 @@
 # Use a base image with Java installed, such as OpenJDK
 FROM openjdk:8-jdk-alpine
 
+# Install curl and other necessary tools
+RUN apk add --no-cache curl bash
+
 # Set environment variables
 ENV WILDFLY_VERSION=19.0.0.Final
 ENV JBOSS_HOME=/opt/jboss/wildfly
