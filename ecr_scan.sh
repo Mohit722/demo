@@ -12,18 +12,27 @@ REGION=$3
 SCAN_STATUS=1
 RETRY_COUNT=0
 MAX_RETRIES=10
+RETRY_INTERVAL=5  # Retry interval in seconds
+
+# Function to log messages with timestamps
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1"
+}
 
 # Wait for the image scan to complete
 until [ "$SCAN_STATUS" -eq "0" ] || [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; do
-    echo "Waiting for ECR scan to complete (Attempt $((RETRY_COUNT+1)) of $MAX_RETRIES)..."
+    log_message "Waiting for ECR scan to complete (Attempt $((RETRY_COUNT+1)) of $MAX_RETRIES)..."
     aws ecr wait image-scan-complete --region "$REGION" --repository-name "$ECR_REPO" --image-id imageTag="$IMAGE_TAG"
     SCAN_STATUS=$?
-    sleep 5
+    if [ "$SCAN_STATUS" -ne "0" ]; then
+        log_message "Image scan not complete. Status: $SCAN_STATUS"
+    fi
+    sleep $RETRY_INTERVAL
     ((RETRY_COUNT++))
 done
 
 if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
-    echo "ERROR: Image scan did not complete within the expected time."
+    log_message "ERROR: Image scan did not complete within the expected time."
     exit 1
 fi
 
@@ -34,11 +43,11 @@ HIGH=$(echo "$SCAN_FINDINGS" | jq '.imageScanFindings.findingSeverityCounts.HIGH
 
 # Assess vulnerabilities
 if [ "$CRITICAL" != "null" ] && [ "$CRITICAL" -gt "0" ]; then
-    echo "CRITICAL vulnerabilities found. Exiting."
+    log_message "CRITICAL vulnerabilities found. Exiting."
     exit 1
 elif [ "$HIGH" != "null" ] && [ "$HIGH" -gt "15" ]; then
-    echo "HIGH vulnerabilities exceed threshold. Exiting."
+    log_message "HIGH vulnerabilities exceed threshold. Exiting."
     exit 2
 else
-    echo "INFO: No major vulnerabilities found."
+    log_message "INFO: No major vulnerabilities found."
 fi
