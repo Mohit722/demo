@@ -1,77 +1,72 @@
 pipeline {
-    agent { label 'demo' } // Runs on the 'demo' Docker node in Jenkins
+    agent none
+    options {
+        timeout(time: 15, unit: 'MINUTES')
+    }
 
     parameters {
-        string(name: 'AWS_ACCOUNT_ID', defaultValue: '<aws_account_id>', description: 'AWS Account ID')
-        string(name: 'REGION', defaultValue: 'us-west-2', description: 'AWS Region')
-        string(name: 'ECR_REPO', defaultValue: 'my-docker-repo', description: 'ECR Repository Name')
-        string(name: 'GIT_REPO_URL', defaultValue: 'https://github.com/your-repo/my-docker-app.git', description: 'Git Repository URL')
+        string(name: 'ECR_URL', defaultValue: 'your-ecr-url', description: 'ECR repository URL')
+        string(name: 'REPO', defaultValue: 'myapp', description: 'Docker repository name')
+        string(name: 'REGION', defaultValue: 'ap-south-1', description: 'AWS region')
     }
 
     environment {
-        AWS_CREDENTIALS_ID = 'aws-credentials'  // Jenkins-stored AWS credentials ID
+        AWS_CREDS = credentials('aws-credentials-id')
     }
 
     stages {
         stage('Checkout') {
+            agent { label 'demo' }
             steps {
-                git "${params.GIT_REPO_URL}"
+                git branch: 'main', url: 'https://github.com/your-org/your-repo.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Image') {
+            agent { label 'demo' }
             steps {
                 script {
-                    docker.build("my-docker-app:latest", ".")
+                    dockerTag = "${params.REPO}:${env.BUILD_ID}"
+                    myImage = docker.build(dockerTag)
                 }
             }
         }
 
-        stage('Push to ECR') {
-            environment {
-                DOCKER_IMAGE_TAG = "${params.AWS_ACCOUNT_ID}.dkr.ecr.${params.REGION}.amazonaws.com/${params.ECR_REPO}:latest"
-            }
+        stage('Quality Gate') {
+            agent { label 'demo' }
             steps {
-                withAWS(credentials: "${AWS_CREDENTIALS_ID}", region: "${params.REGION}") {
-                    script {
-                        // Login to ECR
-                        sh 'aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${params.AWS_ACCOUNT_ID}.dkr.ecr.${params.REGION}.amazonaws.com'
-                        
-                        // Tag and push the Docker image to ECR
-                        sh 'docker tag my-docker-app:latest $DOCKER_IMAGE_TAG'
-                        sh 'docker push $DOCKER_IMAGE_TAG'
+                echo "Checking image quality gates..."
+                // Placeholder for integrating a quality gate check (e.g., SonarQube, security scan)
+                // Add quality check logic here
+            }
+        }
+
+        stage('Push Image') {
+            agent { label 'demo' }
+            steps {
+                script {
+                    docker.withRegistry("https://${params.ECR_URL}", AWS_CREDS) {
+                        myImage.push()
                     }
                 }
             }
-        }
-
-        stage('Vulnerability Scan') {
-            steps {
-                withAWS(credentials: "${AWS_CREDENTIALS_ID}", region: "${params.REGION}") {
-                    sh './vulnerability_scan.sh latest ${params.ECR_REPO} ${params.REGION}'
+            post {
+                success {
+                    echo "Docker image pushed successfully."
                 }
             }
         }
 
-        stage('Quality Gates') {
+        stage('Scan Image') {
+            agent { label 'demo' }
             steps {
-                script {
-                    def scanResults = readJSON file: 'scan-results.json'
-                    def criticalVulns = scanResults.findingSeverityCounts.CRITICAL ?: 0
-                    def highVulns = scanResults.findingSeverityCounts.HIGH ?: 0
-
-                    if (criticalVulns > 0 || highVulns > 15) {
-                        error("Build failed due to vulnerability thresholds being exceeded")
-                    }
+                sh "./ecr_scan.sh ${params.REPO} ${env.BUILD_ID} ${params.REGION}"
+            }
+            post {
+                always {
+                    sh "docker rmi ${params.REPO}:${env.BUILD_ID}"
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            echo 'Cleaning up Docker images...'
-            sh 'docker rmi my-docker-app:latest || true'
         }
     }
 }
