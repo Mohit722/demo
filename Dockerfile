@@ -1,10 +1,10 @@
 # Use the latest secure base image
 FROM openjdk:11-jdk-slim
 
-# Set the WILDFLY_VERSION env variable
-ENV WILDFLY_VERSION=19.0.0.Final \
-    JBOSS_HOME=/opt/jboss/wildfly \
-    WILDFLY_SHA1=0d47c0e8054353f3e2749c11214eab5bc7d78a14
+# Set the WILDFLY_VERSIQN env variable
+ENV WILDFLY_VERSION 19.0.0.Final
+ENV WILDFLY_SHA1 0d47c0e8054353f3e2749c11214eab5bc7d78a14
+ENV JBOSS_HOME /opt/jboss/wildfly
 
 USER root
 RUN mkdir /var/log/wezva && chown jboss:jboss /var/log/wezva
@@ -19,9 +19,8 @@ RUN cd $HOME && \
     chown -R jboss:0 ${JBOSS_HOME} && \
     chmod -R g+rw ${JBOSS_HOME}
 
-
 # Ensure signals are forwarded to the JVM process correctly for graceful shutdown
-ENV LAUNCH_JBOSS_IN_BACKGROUND=true
+ENV LAUNCH_JBOSS_IN_BACKGROUND true
 
 USER jboss
 
@@ -30,4 +29,5 @@ EXPOSE 8080
 
 # Set the default command to run on boot
 # This will boot Wildfly in the standalone mode and bind to all interface
+
 CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0"]
