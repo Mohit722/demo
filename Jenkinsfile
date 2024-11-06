@@ -37,6 +37,10 @@ pipeline {
 
         stage('Scan Image') {
             steps {
+                script { 
+                    // Ensure the script has execute permissions 
+                    sh "chmod +x ./getimagescan.sh"
+                }
                 withAWS(credentials: env.AWS_CREDENTIALS) {
                     sh "./getimagescan.sh ${params.REPO} ${env.BUILD_ID} ${params.REGION}"
                 }
