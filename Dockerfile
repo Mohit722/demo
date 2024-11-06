@@ -8,6 +8,9 @@ ENV WILDFLY_VERSION=19.0.0.Final \
 
 USER root
 
+# Create the jboss user and group
+RUN groupadd -r jboss && useradd -r -g jboss jboss
+
 # Combine RUN commands to reduce layers and install curl securely
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
@@ -18,12 +21,12 @@ RUN apt-get update && \
     tar xf wildfly-$WILDFLY_VERSION.tar.gz -C /opt && \
     mv /opt/wildfly-$WILDFLY_VERSION $JBOSS_HOME && \
     rm wildfly-$WILDFLY_VERSION.tar.gz && \
-    chown -R jboss:0 ${JBOSS_HOME} && \
+    chown -R jboss:jboss ${JBOSS_HOME} && \
     chmod -R g+rw ${JBOSS_HOME} && \
     apt-get purge -y --auto-remove curl
 
 # Ensure signals are forwarded to the JVM process correctly for graceful shutdown
-ENV LAUNCH_JBOSS_IN_BACKGROUND true
+ENV LAUNCH_JBOSS_IN_BACKGROUND=true
 
 USER jboss
 
