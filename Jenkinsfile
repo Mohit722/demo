@@ -11,9 +11,9 @@ pipeline {
     }
 
     environment {
-        AWS_CREDENTIALS = 'aws_credentials' // Store the credentials name in an environment variable
+        AWS_ACCESS_KEY_ID = credentials('aws_credentials')
+        AWS_SECRET_ACCESS_KEY = credentials('aws_credentials')
     }
-
     stages {
         stage('Checkout') {
             agent { label 'demo' }
