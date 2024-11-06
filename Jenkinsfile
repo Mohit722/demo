@@ -18,7 +18,7 @@ pipeline {
         stage('Checkout') {
             agent { label 'demo' }
             steps {
-                git branch: 'master', url: 'https://gitlab.com/scmlearningcentre/demo.git'
+                git branch: 'master', url: 'https://github.com/Mohit722/demosetup.git'
             }
         }
 
