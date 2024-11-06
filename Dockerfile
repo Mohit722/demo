@@ -1,12 +1,13 @@
-# Start with a smaller base image for efficiency
+# Use a smaller base image
 FROM openjdk:11-jdk-slim
 
-ENV WILDFLY_VERSION=20.0.1.Final \
-    JBOSS_HOME=/opt/jboss/wildfly \
-    WILDFLY_SHA1=0d47c0e8054353f3e2749c11214eab5bc7d78a14
+ARG WILDFLY_VERSION=20.0.1.Final
+ARG JBOSS_HOME=/opt/jboss/wildfly
+ARG WILDFLY_SHA1=0d47c0e8054353f3e2749c11214eab5bc7d78a14
 
 USER root
 
+# Combine RUN commands to reduce layers
 RUN apt-get update && apt-get install -y curl && \
     mkdir -p /var/log/wezva && chown -R jboss:jboss /var/log/wezva && \
     curl -O https://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz && \
