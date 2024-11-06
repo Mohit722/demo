@@ -25,7 +25,7 @@ RUN curl -fsSL https://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILD
     chmod -R g+rw /opt/jboss/wildfly
 
 # Expose necessary ports
-EXPOSE 8080 9990
+EXPOSE 8080 
 
 # Set the working directory
 WORKDIR $JBOSS_HOME
