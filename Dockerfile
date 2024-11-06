@@ -8,9 +8,6 @@ ENV WILDFLY_VERSION=19.0.0.Final \
 
 USER root
 
-# Create the jboss user and group
-RUN groupadd -r jboss && useradd -r -g jboss jboss
-
 # Combine RUN commands to reduce layers and install curl securely
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
