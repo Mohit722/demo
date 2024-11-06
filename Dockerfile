@@ -1,5 +1,5 @@
-# Use the latest secure base image
-FROM openjdk:11-jdk-slim
+# Use Latest jboss/base-jdk:11 image as the base
+FROM jboss/base-jdk:11
 
 # Set the WILDFLY_VERSIQN env variable
 ENV WILDFLY_VERSION 19.0.0.Final
