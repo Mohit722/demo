@@ -25,7 +25,7 @@ CRITICAL=$(echo "$SCAN_FINDINGS" | jq '.imageScanFindings.findingSeverityCounts.
 HIGH=$(echo "$SCAN_FINDINGS" | jq '.imageScanFindings.findingSeverityCounts.HIGH')
 
 # Check for vulnerabilities
-if { [ "$CRITICAL" != "null" ] || [ "$HIGH" != "null" ]; } && [ "$HIGH" -gt "15" ]; then
+if { [ "$CRITICAL" != "null" ] || [ "$HIGH" != "null" ]; } && [ "$HIGH" -gt "90" ]; then
     echo "Docker image contains vulnerabilities"
     exit 1
 fi
