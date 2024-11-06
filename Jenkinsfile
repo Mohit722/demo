@@ -14,6 +14,7 @@ pipeline {
         AWS_ACCESS_KEY_ID = credentials('aws_credentials')
         AWS_SECRET_ACCESS_KEY = credentials('aws_credentials')
     }
+
     stages {
         stage('Checkout') {
             agent { label 'demo' }
@@ -30,13 +31,20 @@ pipeline {
                     dockerTag = "${params.REPO}:${env.BUILD_ID}"
 
                     dir("${WORKSPACE}") {
-                        // Use the AWS credentials stored in Jenkins (referenced from environment variable)
+                        // Ensure Docker is running and the user has permissions
+                        sh "docker info" // Check Docker daemon status
+
+                        // Authenticate with ECR and build the Docker image
                         docker.withRegistry(params.ECRURL, env.AWS_CREDENTIALS) {
-                            // Build docker image locally
                             myImage = docker.build(dockerTag)
 
-                            // Push the Image to the Registry
-                            myImage.push()
+                            // Push the Image to ECR
+                            try {
+                                myImage.push()
+                            } catch (e) {
+                                currentBuild.result = 'FAILURE'
+                                throw e // Fail the build if push fails
+                            }
                         }
                     }
                 }
@@ -52,6 +60,7 @@ pipeline {
             }
             post {
                 always {
+                    // Clean up the Docker image after the scan
                     sh "docker rmi ${params.REPO}:${env.BUILD_ID}"
                 }
             }
