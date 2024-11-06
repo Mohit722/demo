@@ -1,4 +1,4 @@
-# Use official OpenJDK base image with version 11
+# Use official OpenJDK base image with version 11 (slim version)
 FROM openjdk:11-jdk-slim
 
 # Set the WILDFLY_VERSION environment variable
@@ -6,10 +6,12 @@ ENV WILDFLY_VERSION 19.0.0.Final
 ENV WILDFLY_SHA1 0d47c0e8054353f3e2749c11214eab5bc7d78a14
 ENV JBOSS_HOME /opt/jboss/wildfly
 
-# Create necessary directories and set permissions (use non-root user)
-RUN mkdir /var/log/wezva && \
+# Install curl and other necessary utilities, and create the user
+RUN apt-get update && apt-get install -y curl && \
+    mkdir /var/log/wezva && \
     adduser --disabled-password --gecos "" jboss && \
-    chown jboss:jboss /var/log/wezva
+    chown jboss:jboss /var/log/wezva && \
+    apt-get clean
 
 # Download and install WildFly
 RUN curl -fsSL https://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz -o /tmp/wildfly.tar.gz && \
