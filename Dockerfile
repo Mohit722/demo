@@ -1,33 +1,33 @@
-# Use Latest jboss/base-jdk:11 image as the base
-FROM jboss/base-jdk:11
+# Use official OpenJDK base image with version 11
+FROM openjdk:11-jdk-slim
 
-# Set the WILDFLY_VERSIQN env variable
+# Set the WILDFLY_VERSION environment variable
 ENV WILDFLY_VERSION 19.0.0.Final
 ENV WILDFLY_SHA1 0d47c0e8054353f3e2749c11214eab5bc7d78a14
 ENV JBOSS_HOME /opt/jboss/wildfly
 
-USER root
-RUN mkdir /var/log/wezva && chown jboss:jboss /var/log/wezva
+# Create necessary directories and set permissions (use non-root user)
+RUN mkdir /var/log/wezva && \
+    adduser --disabled-password --gecos "" jboss && \
+    chown jboss:jboss /var/log/wezva
 
-# Add the WildFly distribution to /opt, and make wildfly the owner of the extracted tar content
-RUN cd $HOME && \
-    curl -O https://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz && \
-    sha1sum wildfly-$WILDFLY_VERSION.tar.gz | grep $WILDFLY_SHA1 && \
-    tar xf wildfly-$WILDFLY_VERSION.tar.gz && \
-    mv $HOME/wildfly-$WILDFLY_VERSION $JBOSS_HOME && \
-    rm wildfly-$WILDFLY_VERSION.tar.gz && \
-    chown -R jboss:0 ${JBOSS_HOME} && \
-    chmod -R g+rw ${JBOSS_HOME}
+# Download and install WildFly
+RUN curl -fsSL https://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz -o /tmp/wildfly.tar.gz && \
+    echo "$WILDFLY_SHA1  /tmp/wildfly.tar.gz" | sha1sum -c - && \
+    tar -xzf /tmp/wildfly.tar.gz -C /opt/jboss && \
+    mv /opt/jboss/wildfly-$WILDFLY_VERSION $JBOSS_HOME && \
+    rm /tmp/wildfly.tar.gz && \
+    chown -R jboss:jboss $JBOSS_HOME && \
+    chmod -R g+rw $JBOSS_HOME
 
 # Ensure signals are forwarded to the JVM process correctly for graceful shutdown
-ENV LAUNCH_JBOSS_IN_BACKGROUND true
+ENV LAUNCH_JBOSS_IN_BACKGROUND=true
 
+# Switch to non-root user
 USER jboss
 
-# Expose the ports we're interested in
+# Expose the application port
 EXPOSE 8080
 
-# Set the default command to run on boot
-# This will boot Wildfly in the standalone mode and bind to all interface
-
+# Set the default command to run WildFly in standalone mode
 CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0"]
